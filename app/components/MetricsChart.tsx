@@ -13,7 +13,6 @@ import {
   RadialLinearScale,
 } from 'chart.js';
 import { Bar, Doughnut, Radar } from 'react-chartjs-2';
-import '../styles/report-view.css';
 
 // Register ChartJS components
 ChartJS.register(
@@ -36,7 +35,7 @@ interface LanguageChartProps {
 export function LanguageChart({ languages }: LanguageChartProps) {
   // Process language data
   const entries = Object.entries(languages);
-  const total = entries.reduce((sum, [_, value]) => sum + value, 0);
+  const total = entries.reduce((sum, [, value]) => sum + value, 0);
   
   // Take top 5 languages, group others
   const topLanguages = entries
@@ -46,7 +45,7 @@ export function LanguageChart({ languages }: LanguageChartProps) {
   const otherLanguages = entries
     .sort((a, b) => b[1] - a[1])
     .slice(5)
-    .reduce((sum, [_, value]) => sum + value, 0);
+    .reduce((sum, [, value]) => sum + value, 0);
   
   // Prepare chart data
   const labels = [...topLanguages.map(([lang]) => lang)];
@@ -54,7 +53,7 @@ export function LanguageChart({ languages }: LanguageChartProps) {
     labels.push('Other');
   }
   
-  const data = [...topLanguages.map(([_, value]) => Math.round((value / total) * 100))];
+  const data = [...topLanguages.map(([, value]) => Math.round((value / total) * 100))];
   if (otherLanguages > 0) {
     data.push(Math.round((otherLanguages / total) * 100));
   }
@@ -103,7 +102,7 @@ export function LanguageChart({ languages }: LanguageChartProps) {
         borderColor: '#374151',
         borderWidth: 1,
         callbacks: {
-          label: (context: any) => `${context.label}: ${context.raw}%`,
+          label: (context: { label: string; raw: number }) => `${context.label}: ${context.raw}%`,
         },
       },
     },

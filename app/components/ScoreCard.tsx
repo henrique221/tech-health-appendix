@@ -1,5 +1,4 @@
 import React from 'react';
-import '../styles/report-view.css';
 
 interface ScoreCardProps {
   title: string;
