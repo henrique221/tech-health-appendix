@@ -10,7 +10,6 @@ interface RepositoryFormProps {
 type RepoVisibility = 'unknown' | 'public' | 'private' | 'checking';
 
 export default function RepositoryForm({ onSubmit, isLoading, apiError }: RepositoryFormProps) {
-  const [inputMode, setInputMode] = useState<'separate' | 'url'>('url'); // Default to URL input for ease of use
   const [repoUrl, setRepoUrl] = useState('');
   const [owner, setOwner] = useState('');
   const [repo, setRepo] = useState('');
@@ -21,9 +20,9 @@ export default function RepositoryForm({ onSubmit, isLoading, apiError }: Reposi
   const [isCheckingRepo, setIsCheckingRepo] = useState(false);
   const [tokenRequired, setTokenRequired] = useState(false);
 
-  // Parse repository URL if inputMode is 'url'
+  // Parse repository URL
   useEffect(() => {
-    if (inputMode === 'url' && repoUrl) {
+    if (repoUrl) {
       try {
         // Handle different GitHub URL formats
         let url: URL;
@@ -70,7 +69,7 @@ export default function RepositoryForm({ onSubmit, isLoading, apiError }: Reposi
         console.error('Error parsing repo URL:', err);
       }
     }
-  }, [repoUrl, inputMode]);
+  }, [repoUrl]);
 
   // Check repository visibility when owner and repo change
   useEffect(() => {
@@ -138,76 +137,25 @@ export default function RepositoryForm({ onSubmit, isLoading, apiError }: Reposi
     <div className="form-container">
       <h2 className="form-title">Analyze GitHub Repository</h2>
       
-      <div className="input-mode-toggle">
-        <button
-          type="button"
-          onClick={() => setInputMode('url')}
-          className={`toggle-button ${inputMode === 'url' ? 'active' : ''}`}
-        >
-          Repository URL
-        </button>
-        <button
-          type="button"
-          onClick={() => setInputMode('separate')}
-          className={`toggle-button ${inputMode === 'separate' ? 'active' : ''}`}
-        >
-          Owner & Name
-        </button>
-      </div>
-      
       <form onSubmit={handleSubmit}>
-        {inputMode === 'url' ? (
-          <div className="form-group">
-            <label htmlFor="repoUrl" className="form-label">
-              Repository URL
-            </label>
-            <input
-              type="text"
-              id="repoUrl"
-              value={repoUrl}
-              onChange={(e) => setRepoUrl(e.target.value)}
-              className="form-input"
-              placeholder="e.g., https://github.com/facebook/react or facebook/react"
-              required
-            />
-            <p className="form-help-text">
-              Enter the full GitHub repository URL or just &apos;owner/repo&apos;
-            </p>
-            {error && <p className="form-error">{error}</p>}
-          </div>
-        ) : (
-          <>
-            <div className="form-group">
-              <label htmlFor="owner" className="form-label">
-                Repository Owner
-              </label>
-              <input
-                type="text"
-                id="owner"
-                value={owner}
-                onChange={(e) => setOwner(e.target.value)}
-                className="form-input"
-                placeholder="e.g., facebook"
-                required
-              />
-            </div>
-            
-            <div className="form-group">
-              <label htmlFor="repo" className="form-label">
-                Repository Name
-              </label>
-              <input
-                type="text"
-                id="repo"
-                value={repo}
-                onChange={(e) => setRepo(e.target.value)}
-                className="form-input"
-                placeholder="e.g., react"
-                required
-              />
-            </div>
-          </>
-        )}
+        <div className="form-group">
+          <label htmlFor="repoUrl" className="form-label">
+            Repository URL
+          </label>
+          <input
+            type="text"
+            id="repoUrl"
+            value={repoUrl}
+            onChange={(e) => setRepoUrl(e.target.value)}
+            className="form-input"
+            placeholder="e.g., https://github.com/facebook/react or facebook/react"
+            required
+          />
+          <p className="form-help-text">
+            Enter the full GitHub repository URL or just &apos;owner/repo&apos;
+          </p>
+          {error && <p className="form-error">{error}</p>}
+        </div>
         
         <div className="form-group">
           <div className="flex items-center justify-between">
