@@ -1,0 +1,345 @@
+/* Professional Dark Theme for ReportView */
+.report-view {
+  @apply bg-gray-900 min-h-screen text-gray-100;
+  background-image: 
+    radial-gradient(at 40% 20%, rgba(59, 130, 246, 0.05) 0px, transparent 50%),
+    radial-gradient(at 80% 0%, rgba(147, 51, 234, 0.05) 0px, transparent 50%),
+    radial-gradient(at 0% 50%, rgba(16, 185, 129, 0.05) 0px, transparent 50%);
+}
+
+.report-container {
+  @apply mx-auto px-6 py-8 max-w-7xl;
+}
+
+/* Header Section */
+.report-header {
+  @apply flex flex-col lg:flex-row justify-between items-start lg:items-center mb-10 gap-6;
+}
+
+.report-title-section {
+  @apply flex-1;
+}
+
+.report-title {
+  @apply text-4xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent mb-2;
+}
+
+.report-subtitle {
+  @apply text-gray-400 text-lg;
+}
+
+.report-actions {
+  @apply flex flex-col sm:flex-row gap-3;
+}
+
+.btn-primary {
+  @apply px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg 
+         hover:from-blue-700 hover:to-blue-800 transition-all duration-200 
+         disabled:from-blue-800 disabled:to-blue-900 disabled:opacity-50
+         flex items-center justify-center font-medium shadow-lg hover:shadow-xl;
+}
+
+.btn-secondary {
+  @apply px-6 py-3 border border-gray-600 text-gray-300 rounded-lg 
+         hover:bg-gray-800 hover:border-gray-500 transition-all duration-200
+         flex items-center justify-center font-medium;
+}
+
+/* Repository Info Card */
+.repo-card {
+  @apply bg-gray-800 rounded-xl shadow-2xl p-8 mb-10 border border-gray-700;
+}
+
+.repo-header {
+  @apply flex items-center mb-8;
+}
+
+.repo-avatar {
+  @apply w-20 h-20 rounded-full mr-6 ring-4 ring-blue-500/20;
+}
+
+.repo-name {
+  @apply text-3xl font-bold text-white mb-2;
+}
+
+.repo-description {
+  @apply text-gray-400 text-lg;
+}
+
+.repo-info-grid {
+  @apply grid grid-cols-1 lg:grid-cols-2 gap-8;
+}
+
+.info-section {
+  @apply space-y-4;
+}
+
+.info-title {
+  @apply text-xl font-semibold text-blue-400 mb-4;
+}
+
+.info-grid {
+  @apply grid grid-cols-2 gap-4;
+}
+
+.info-label {
+  @apply text-gray-400 font-medium;
+}
+
+.info-value {
+  @apply text-gray-200 font-semibold;
+}
+
+/* Overall Score Section */
+.score-display {
+  @apply flex items-center space-x-6;
+}
+
+.score-number {
+  @apply text-7xl font-bold;
+}
+
+.score-details {
+  @apply flex-1;
+}
+
+.score-text {
+  @apply text-gray-300 text-lg mb-3;
+}
+
+.score-bar-container {
+  @apply relative bg-gray-700 h-6 rounded-full overflow-hidden;
+}
+
+.score-bar {
+  @apply h-full bg-gradient-to-r from-blue-500 to-purple-500 transition-all duration-1000;
+}
+
+.benchmark-line {
+  @apply absolute top-0 h-full w-1 bg-red-400;
+}
+
+/* Score Colors */
+.score-excellent {
+  @apply text-green-400;
+}
+
+.score-good {
+  @apply text-yellow-400;
+}
+
+.score-poor {
+  @apply text-red-400;
+}
+
+/* Cards Grid */
+.cards-grid {
+  @apply grid grid-cols-1 lg:grid-cols-3 gap-8 mb-10;
+}
+
+.metric-card {
+  @apply bg-gray-800 rounded-xl shadow-2xl p-6 border border-gray-700 
+         hover:border-gray-600 transition-all duration-200 hover:shadow-blue-500/10;
+}
+
+.card-title {
+  @apply text-xl font-semibold text-white mb-4;
+}
+
+.card-score {
+  @apply text-4xl font-bold mb-6;
+}
+
+.card-metrics {
+  @apply space-y-3 mb-6;
+}
+
+.metric-item {
+  @apply flex justify-between items-center py-2 border-b border-gray-700 last:border-b-0;
+}
+
+.metric-label {
+  @apply text-gray-400;
+}
+
+.metric-value {
+  @apply text-gray-200 font-medium;
+}
+
+/* Charts Section */
+.charts-grid {
+  @apply grid grid-cols-1 xl:grid-cols-2 gap-8 mb-10;
+}
+
+.chart-card {
+  @apply bg-gray-800 rounded-xl shadow-2xl p-8 border border-gray-700;
+}
+
+.chart-title {
+  @apply text-2xl font-semibold text-white mb-6;
+}
+
+.code-metrics-grid {
+  @apply grid grid-cols-2 gap-4 mb-8;
+}
+
+.metric-box {
+  @apply bg-gray-700 p-4 rounded-lg border border-gray-600;
+}
+
+.metric-box-label {
+  @apply text-gray-400 text-sm mb-1;
+}
+
+.metric-box-value {
+  @apply text-2xl font-bold text-white;
+}
+
+.languages-section {
+  @apply mt-8;
+}
+
+.languages-title {
+  @apply text-lg font-semibold text-blue-400 mb-4;
+}
+
+/* Roadmap Section */
+.roadmap-card {
+  @apply bg-gray-800 rounded-xl shadow-2xl p-8 border border-gray-700;
+}
+
+.roadmap-title {
+  @apply text-2xl font-semibold text-white mb-8;
+}
+
+.roadmap-grid {
+  @apply grid grid-cols-1 md:grid-cols-3 gap-6;
+}
+
+.roadmap-section {
+  @apply bg-gray-700 border border-gray-600 rounded-xl p-6 hover:bg-gray-650 transition-colors duration-200;
+}
+
+.roadmap-immediate .roadmap-section-title {
+  @apply text-blue-400;
+}
+
+.roadmap-short .roadmap-section-title {
+  @apply text-indigo-400;
+}
+
+.roadmap-long .roadmap-section-title {
+  @apply text-purple-400;
+}
+
+.roadmap-section-title {
+  @apply font-semibold text-lg mb-4;
+}
+
+.roadmap-list {
+  @apply list-disc pl-5 space-y-3 text-gray-300;
+}
+
+.roadmap-list li {
+  @apply leading-relaxed;
+}
+
+/* Loading Animation */
+.loading-spinner {
+  @apply animate-spin h-5 w-5 text-white;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .report-container {
+    @apply px-4 py-6;
+  }
+  
+  .report-title {
+    @apply text-3xl;
+  }
+  
+  .repo-header {
+    @apply flex-col items-start space-y-4;
+  }
+  
+  .repo-avatar {
+    @apply w-16 h-16 mr-0;
+  }
+  
+  .score-display {
+    @apply flex-col space-x-0 space-y-4;
+  }
+  
+  .score-number {
+    @apply text-5xl;
+  }
+}
+
+/* Print Styles for PDF Export */
+@media print {
+  .report-view {
+    @apply bg-white text-gray-900;
+  }
+  
+  .repo-card,
+  .metric-card,
+  .chart-card,
+  .roadmap-card {
+    @apply bg-white border-gray-300 shadow-none;
+  }
+  
+  .report-title {
+    @apply text-gray-900;
+    background: none;
+    -webkit-background-clip: initial;
+    background-clip: initial;
+  }
+}
+
+/* Custom scrollbar for webkit browsers */
+.report-view ::-webkit-scrollbar {
+  @apply w-2;
+}
+
+.report-view ::-webkit-scrollbar-track {
+  @apply bg-gray-800;
+}
+
+.report-view ::-webkit-scrollbar-thumb {
+  @apply bg-gray-600 rounded-full;
+}
+
+.report-view ::-webkit-scrollbar-thumb:hover {
+  @apply bg-gray-500;
+}
+
+/* Additional utility classes */
+.bg-gray-650 {
+  background-color: #374151;
+}
+
+/* Hover effects */
+.metric-card:hover {
+  transform: translateY(-2px);
+}
+
+.chart-card:hover {
+  transform: translateY(-1px);
+}
+
+/* Animation classes */
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
