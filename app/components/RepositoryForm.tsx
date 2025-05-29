@@ -160,7 +160,7 @@ export default function RepositoryForm({ onSubmit, isLoading, apiError }: Reposi
         <div className="form-group">
           <div className="flex items-center justify-between">
             <label htmlFor="token" className="form-label">
-              GitHub Token (Optional)
+              GitHub Token (Required for private repositories)
             </label>
             <button
               type="button"

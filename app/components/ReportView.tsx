@@ -36,6 +36,157 @@ export default function ReportView({ report, onReset }: ReportViewProps) {
       const reportElement = document.getElementById('report-container');
       if (!reportElement) return;
       
+      // Create a temporary container for PDF export
+      const tempContainer = document.createElement('div');
+      tempContainer.style.position = 'absolute';
+      tempContainer.style.left = '-9999px';
+      tempContainer.style.top = '0';
+      tempContainer.style.width = '1200px';
+      tempContainer.innerHTML = reportElement.innerHTML;
+      document.body.appendChild(tempContainer);
+      
+      // Add comprehensive PDF-safe CSS inline to override ALL problematic color functions
+      const pdfSafeStyle = document.createElement('style');
+      pdfSafeStyle.id = 'pdf-safe-css';
+      pdfSafeStyle.textContent = `
+        /* Force all elements to use standard colors - no oklch, color-mix, or complex gradients */
+        #pdf-temp-container * {
+          color: inherit !important;
+        }
+        
+        #pdf-temp-container {
+          background: #111827 !important;
+          color: #f1f5f9 !important;
+          font-family: system-ui, -apple-system, sans-serif !important;
+        }
+        
+        /* Override all background colors with standard hex values */
+        #pdf-temp-container .report-view,
+        #pdf-temp-container .report-container {
+          background: #111827 !important;
+          background-image: none !important;
+          background-color: #111827 !important;
+        }
+        
+        #pdf-temp-container .repo-card,
+        #pdf-temp-container .metric-card,
+        #pdf-temp-container .chart-card,
+        #pdf-temp-container .roadmap-card {
+          background: #1f2937 !important;
+          background-image: none !important;
+          background-color: #1f2937 !important;
+          border: 1px solid #374151 !important;
+          color: #f1f5f9 !important;
+        }
+        
+        /* Text colors */
+        #pdf-temp-container .report-title,
+        #pdf-temp-container .header-title,
+        #pdf-temp-container .landing-title {
+          background: none !important;
+          background-image: none !important;
+          color: #60a5fa !important;
+          -webkit-background-clip: unset !important;
+          background-clip: unset !important;
+        }
+        
+        #pdf-temp-container h1, #pdf-temp-container h2, #pdf-temp-container h3, #pdf-temp-container h4 {
+          color: #f1f5f9 !important;
+        }
+        
+        #pdf-temp-container p, #pdf-temp-container span, #pdf-temp-container div {
+          color: #cbd5e1 !important;
+        }
+        
+        /* Buttons */
+        #pdf-temp-container .btn-primary,
+        #pdf-temp-container .submit-button {
+          background: #3b82f6 !important;
+          background-image: none !important;
+          background-color: #3b82f6 !important;
+          color: #ffffff !important;
+          border: none !important;
+        }
+        
+        #pdf-temp-container .btn-secondary {
+          background: #6b7280 !important;
+          background-image: none !important;
+          background-color: #6b7280 !important;
+          color: #ffffff !important;
+          border: none !important;
+        }
+        
+        /* Score elements */
+        #pdf-temp-container .score-circle,
+        #pdf-temp-container .score-number {
+          background: #3b82f6 !important;
+          background-image: none !important;
+          background-color: #3b82f6 !important;
+          color: #ffffff !important;
+        }
+        
+        #pdf-temp-container .score-bar {
+          background: #3b82f6 !important;
+          background-image: none !important;
+          background-color: #3b82f6 !important;
+        }
+        
+        /* Charts and progress bars */
+        #pdf-temp-container .progress,
+        #pdf-temp-container .progress-bar {
+          background: #3b82f6 !important;
+          background-image: none !important;
+          background-color: #3b82f6 !important;
+        }
+        
+        /* Override any Tailwind classes that might use oklch */
+        #pdf-temp-container [class*="bg-"],
+        #pdf-temp-container [class*="border-"],
+        #pdf-temp-container [class*="text-"] {
+          background-image: none !important;
+        }
+        
+        /* Force canvas elements to have simple backgrounds */
+        #pdf-temp-container canvas {
+          background: #1f2937 !important;
+        }
+        
+        /* Remove all gradients and complex backgrounds */
+        #pdf-temp-container * {
+          background-image: none !important;
+          background-attachment: unset !important;
+          filter: none !important;
+          backdrop-filter: none !important;
+        }
+      `;
+      tempContainer.id = 'pdf-temp-container';
+      document.head.appendChild(pdfSafeStyle);
+      
+      // Wait a bit for styles to apply
+      await new Promise(resolve => setTimeout(resolve, 200));
+      
+      // Convert report element to canvas with better options for html2canvas
+      const canvas = await html2canvas(tempContainer, {
+        scale: 1.5,
+        logging: false,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#111827',
+        ignoreElements: (element: Element) => {
+          // Skip problematic elements
+          return element.classList?.contains('btn-primary') || 
+                 element.classList?.contains('btn-secondary') ||
+                 element.tagName === 'BUTTON';
+        }
+      });
+      
+      // Clean up
+      document.body.removeChild(tempContainer);
+      const cssElement = document.getElementById('pdf-safe-css');
+      if (cssElement) {
+        document.head.removeChild(cssElement);
+      }
+      
       // Create a new jsPDF instance
       const doc = new jsPDF('p', 'mm', 'a4');
       const pageWidth = doc.internal.pageSize.getWidth();
@@ -49,13 +200,6 @@ export default function ReportView({ report, onReset }: ReportViewProps) {
       doc.text(`Repository: ${report.repository.full_name}`, pageWidth / 2, 25, { align: 'center' });
       doc.setFontSize(12);
       doc.text(`Generated on: ${formattedDate}`, pageWidth / 2, 32, { align: 'center' });
-      
-      // Convert report element to canvas
-      const canvas = await html2canvas(reportElement, {
-        scale: 1.5,
-        logging: false,
-        useCORS: true,
-      });
       
       // Convert canvas to image
       const imgData = canvas.toDataURL('image/png');

@@ -1,0 +1,132 @@
+/* PDF Export Safe Colors - Replaces oklch and color-mix functions */
+
+/* Override Tailwind's oklch colors with standard hex values */
+:root {
+  --color-yellow-50: #fefce8;
+  --color-yellow-500: #eab308;
+  --color-yellow-600: #ca8a04;
+  --color-green-500: #22c55e;
+  --color-green-600: #16a34a;
+  --color-blue-400: #60a5fa;
+  --color-blue-700: #1d4ed8;
+  --color-blue-900: #1e3a8a;
+  --color-gray-300: #d1d5db;
+  --color-white: #ffffff;
+  --color-red-500: #ef4444;
+  --color-red-600: #dc2626;
+}
+
+/* Override gradient positions to use standard syntax */
+.bg-gradient-to-br {
+  --tw-gradient-position: to bottom right;
+  background-image: linear-gradient(var(--tw-gradient-stops));
+}
+
+/* Override color-mix functions with solid colors */
+.border-blue-700\/50 {
+  border-color: rgba(29, 78, 216, 0.5) !important;
+}
+
+.bg-blue-900\/30 {
+  background-color: rgba(30, 58, 138, 0.3) !important;
+}
+
+/* Fix any problematic gradients */
+.from-green-500 {
+  --tw-gradient-from: #22c55e;
+}
+
+.from-red-500 {
+  --tw-gradient-from: #ef4444;
+}
+
+.from-yellow-500 {
+  --tw-gradient-from: #eab308;
+}
+
+.to-green-600 {
+  --tw-gradient-to: #16a34a;
+}
+
+.to-red-600 {
+  --tw-gradient-to: #dc2626;
+}
+
+.to-yellow-600 {
+  --tw-gradient-to: #ca8a04;
+}
+
+/* Ensure all background colors are standard */
+.report-view {
+  background-color: #111827 !important;
+  background-image: 
+    radial-gradient(at 40% 20%, rgba(59, 130, 246, 0.05) 0px, transparent 50%),
+    radial-gradient(at 80% 0%, rgba(147, 51, 234, 0.05) 0px, transparent 50%),
+    radial-gradient(at 0% 50%, rgba(16, 185, 129, 0.05) 0px, transparent 50%) !important;
+}
+
+.repo-card,
+.metric-card,
+.chart-card,
+.roadmap-card {
+  background-color: #1f2937 !important;
+  border-color: #374151 !important;
+}
+
+/* Fix gradient backgrounds to use standard colors */
+.btn-primary {
+  background: linear-gradient(to right, #2563eb, #1d4ed8) !important;
+}
+
+.score-bar {
+  background: linear-gradient(to right, #3b82f6, #a855f7) !important;
+}
+
+/* Fix header and footer gradients */
+.app-header {
+  background: linear-gradient(135deg, #1e293b 0%, #334155 100%) !important;
+}
+
+.app-footer {
+  background: linear-gradient(135deg, #1e293b 0%, #334155 100%) !important;
+}
+
+/* Fix form container gradient */
+.form-container {
+  background: linear-gradient(135deg, #1e293b 0%, #334155 100%) !important;
+}
+
+/* Fix feature card gradients */
+.feature-card {
+  background: linear-gradient(135deg, #1e293b 0%, #334155 100%) !important;
+}
+
+/* Fix title gradients */
+.report-title,
+.header-title,
+.landing-title {
+  background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  color: transparent !important;
+}
+
+/* Fix feature icon gradient */
+.feature-icon {
+  background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%) !important;
+}
+
+/* Fix submit button gradient */
+.submit-button {
+  background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%) !important;
+}
+
+/* Fix toggle button active state */
+.toggle-button.active {
+  background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%) !important;
+}
+
+/* Fix error alert gradient */
+.error-alert {
+  background: linear-gradient(135deg, #991b1b 0%, #dc2626 100%) !important;
+}
