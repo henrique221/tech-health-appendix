@@ -3,9 +3,11 @@ import { Repository, Commit, GitHubAuth } from "../types";
 
 export class GitHubService {
   private octokit: Octokit;
+  private hasAuth: boolean;
 
   constructor(auth?: GitHubAuth) {
     // Initialize Octokit with or without authentication
+    this.hasAuth = !!auth?.token;
     if (auth?.token) {
       this.octokit = new Octokit({ auth: auth.token });
     } else {
@@ -159,8 +161,13 @@ export class GitHubService {
       });
       
       return response.data;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching workflow runs:', error);
+      // If no authentication and it's a 401/403 error, return empty data
+      if ((error.status === 401 || error.status === 403) && !this.hasAuth) {
+        console.warn('No authentication provided for workflow runs - returning empty data');
+        return { workflow_runs: [], total_count: 0 };
+      }
       throw error;
     }
   }
@@ -187,8 +194,13 @@ export class GitHubService {
       });
       
       return response.data;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching pull requests:', error);
+      // If no authentication and it's a 401/403 error, return empty data
+      if ((error.status === 401 || error.status === 403) && !this.hasAuth) {
+        console.warn('No authentication provided for pull requests - returning empty data');
+        return [];
+      }
       throw error;
     }
   }
@@ -215,8 +227,13 @@ export class GitHubService {
       });
       
       return response.data;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching issues:', error);
+      // If no authentication and it's a 401/403 error, return empty data
+      if ((error.status === 401 || error.status === 403) && !this.hasAuth) {
+        console.warn('No authentication provided for issues - returning empty data');
+        return [];
+      }
       throw error;
     }
   }
