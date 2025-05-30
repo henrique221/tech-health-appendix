@@ -1,7 +1,38 @@
 import { Octokit } from "octokit";
 import { Repository, Commit, GitHubAuth } from "../types";
 
-export class GitHubService {
+// Custom error class for GitHub API rate limit errors
+export class GitHubRateLimitError extends Error {
+  public resetTime: Date;
+  public limit: number;
+  public remaining: number;
+
+  constructor(message: string, resetTime: Date, limit: number, remaining: number) {
+    super(message);
+    this.name = 'GitHubRateLimitError';
+    this.resetTime = resetTime;
+    this.limit = limit;
+    this.remaining = remaining;
+  }
+}
+
+// Define an interface for GitHubService to ensure TypeScript recognizes all methods
+export interface IGitHubService {
+  getRepository(owner: string, name: string): Promise<Repository>;
+  getCommits(owner: string, repo: string, count?: number): Promise<Commit[]>;
+  getLanguages(owner: string, repo: string): Promise<Record<string, number>>;
+  getContributors(owner: string, repo: string): Promise<Array<Record<string, unknown>>>;
+  getFileContent(owner: string, repo: string, path: string): Promise<string>;
+  getWorkflowRuns(owner: string, repo: string): Promise<{ workflow_runs: Array<Record<string, unknown>>; total_count: number }>;
+  getPullRequests(owner: string, repo: string, state: 'open' | 'closed' | 'all', count?: number): Promise<Array<Record<string, unknown>>>;
+  getIssues(owner: string, repo: string, state: 'open' | 'closed' | 'all', count?: number): Promise<Array<Record<string, unknown>>>;
+  getReleases(owner: string, repo: string, count?: number): Promise<Array<Record<string, unknown>>>;
+  getDirectoryContents(owner: string, repo: string, path?: string): Promise<Array<Record<string, unknown>>>;
+  getCodeFrequencyStats(owner: string, repo: string): Promise<Array<[number, number, number]>>;
+}
+
+// Implement the interface
+export class GitHubService implements IGitHubService {
   private octokit: Octokit;
   private hasAuth: boolean;
 
@@ -14,25 +45,73 @@ export class GitHubService {
       this.octokit = new Octokit();
     }
   }
+  
+  /**
+   * Check if an error is a GitHub API rate limit error and handle it
+   * @param error The error object from the GitHub API
+   * @throws GitHubRateLimitError if the error is a rate limit error
+   */
+  private checkRateLimitError(error: Record<string, unknown>): void {
+    // Check if it's a rate limit error (HTTP 403 with specific message)
+    if (error.status === 403 && 
+        ((typeof error.message === 'string' && error.message.includes('API rate limit exceeded')) || 
+         (error.response && typeof error.response === 'object' && 
+          'data' in error.response && error.response.data && 
+          typeof error.response.data === 'object' && 
+          'message' in error.response.data && 
+          typeof error.response.data.message === 'string' && 
+          error.response.data.message.includes('API rate limit exceeded')))) {
+      
+      // Extract rate limit information from headers
+      const headers = error.response && typeof error.response === 'object' && 
+                      'headers' in error.response ? error.response.headers : {};
+      const resetTimestamp = headers && 
+                           typeof headers === 'object' && 
+                           'x-ratelimit-reset' in headers && 
+                           headers['x-ratelimit-reset'] ? 
+        parseInt(String(headers['x-ratelimit-reset'])) * 1000 : // Convert to milliseconds
+        Date.now() + 3600000; // Default to 1 hour from now if not available
+      
+      const limit = headers && typeof headers === 'object' && 'x-ratelimit-limit' in headers ?
+        parseInt(String(headers['x-ratelimit-limit'])) : 60;
+      const remaining = headers && typeof headers === 'object' && 'x-ratelimit-remaining' in headers ?
+        parseInt(String(headers['x-ratelimit-remaining'])) : 0;
+      
+      // Create and throw a custom rate limit error
+      throw new GitHubRateLimitError(
+        'GitHub API rate limit exceeded. Please try again later or provide an access token.',
+        new Date(resetTimestamp),
+        limit,
+        remaining
+      );
+    }
+    
+    // Re-throw the original error if it's not a rate limit error
+    throw error;
+  }
 
   /**
    * Get repository information
    * @param owner Repository owner
    * @param repo Repository name
+   * @throws GitHubRateLimitError if the API rate limit is exceeded
    */
-  async getRepository(owner: string, repo: string): Promise<Repository> {
+  async getRepository(owner: string, name: string): Promise<Repository> {
     try {
       const response = await this.octokit.request('GET /repos/{owner}/{repo}', {
         owner,
-        repo,
+        repo: name,
         headers: {
           'X-GitHub-Api-Version': '2022-11-28'
         }
       });
       
       return response.data as Repository;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching repository:', error);
+      // Check for rate limit errors
+      this.checkRateLimitError(error);
+      // If it's not a rate limit error, just throw the original error
       throw error;
     }
   }
@@ -66,7 +145,7 @@ export class GitHubService {
    * @param owner Repository owner
    * @param repo Repository name
    */
-  async getLanguages(owner: string, repo: string): Promise<{ [key: string]: number }> {
+  async getLanguages(owner: string, repo: string): Promise<Record<string, number>> {
     try {
       const response = await this.octokit.request('GET /repos/{owner}/{repo}/languages', {
         owner,
@@ -88,7 +167,7 @@ export class GitHubService {
    * @param owner Repository owner
    * @param repo Repository name
    */
-  async getContributors(owner: string, repo: string): Promise<any[]> {
+  async getContributors(owner: string, repo: string): Promise<Array<Record<string, unknown>>> {
     try {
       const response = await this.octokit.request('GET /repos/{owner}/{repo}/contributors', {
         owner,
@@ -150,7 +229,7 @@ export class GitHubService {
    * @param owner Repository owner
    * @param repo Repository name
    */
-  async getWorkflowRuns(owner: string, repo: string): Promise<any> {
+  async getWorkflowRuns(owner: string, repo: string): Promise<{ workflow_runs: Array<Record<string, unknown>>; total_count: number }> {
     try {
       const response = await this.octokit.request('GET /repos/{owner}/{repo}/actions/runs', {
         owner,
@@ -179,7 +258,7 @@ export class GitHubService {
    * @param state PR state (open, closed, all)
    * @param count Number of PRs to retrieve
    */
-  async getPullRequests(owner: string, repo: string, state: 'open' | 'closed' | 'all' = 'all', count: number = 100): Promise<any[]> {
+  async getPullRequests(owner: string, repo: string, state: 'open' | 'closed' | 'all', count: number = 30): Promise<Array<Record<string, unknown>>> {
     try {
       const response = await this.octokit.request('GET /repos/{owner}/{repo}/pulls', {
         owner,
@@ -212,7 +291,7 @@ export class GitHubService {
    * @param state Issue state (open, closed, all)
    * @param count Number of issues to retrieve
    */
-  async getIssues(owner: string, repo: string, state: 'open' | 'closed' | 'all' = 'all', count: number = 100): Promise<any[]> {
+  async getIssues(owner: string, repo: string, state: 'open' | 'closed' | 'all', count: number = 30): Promise<Array<Record<string, unknown>>> {
     try {
       const response = await this.octokit.request('GET /repos/{owner}/{repo}/issues', {
         owner,
@@ -244,7 +323,7 @@ export class GitHubService {
    * @param repo Repository name
    * @param count Number of releases to retrieve
    */
-  async getReleases(owner: string, repo: string, count: number = 50): Promise<any[]> {
+  async getReleases(owner: string, repo: string, count: number = 50): Promise<Array<Record<string, unknown>>> {
     try {
       const response = await this.octokit.request('GET /repos/{owner}/{repo}/releases', {
         owner,
@@ -268,7 +347,7 @@ export class GitHubService {
    * @param repo Repository name
    * @param path Directory path (empty for root)
    */
-  async getDirectoryContents(owner: string, repo: string, path: string = ''): Promise<any[]> {
+  async getDirectoryContents(owner: string, repo: string, path: string = ''): Promise<Array<Record<string, unknown>>> {
     try {
       const response = await this.octokit.request('GET /repos/{owner}/{repo}/contents/{path}', {
         owner,
@@ -291,7 +370,7 @@ export class GitHubService {
    * @param owner Repository owner
    * @param repo Repository name
    */
-  async getCodeFrequency(owner: string, repo: string): Promise<number[][]> {
+  async getCodeFrequencyStats(owner: string, repo: string): Promise<Array<[number, number, number]>> {
     try {
       const response = await this.octokit.request('GET /repos/{owner}/{repo}/stats/code_frequency', {
         owner,
@@ -301,7 +380,16 @@ export class GitHubService {
         }
       });
       
-      return Array.isArray(response.data) ? response.data : [];
+      // Ensure the data conforms to the expected [number, number, number][] format
+      if (Array.isArray(response.data)) {
+        return response.data.map(item => {
+          if (Array.isArray(item) && item.length >= 3) {
+            return [Number(item[0]), Number(item[1]), Number(item[2])] as [number, number, number];
+          }
+          return [0, 0, 0] as [number, number, number];
+        });
+      }
+      return [];
     } catch (error) {
       console.error('Error fetching code frequency:', error);
       return [];

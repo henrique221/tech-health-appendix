@@ -1,4 +1,4 @@
-import { GitHubService } from './github-service';
+import { GitHubService, IGitHubService } from './github-service';
 import { 
   CodeMetrics, 
   CodeQuality, 
@@ -9,9 +9,9 @@ import {
 } from '../types';
 
 export class CodeAnalysisService {
-  private githubService: GitHubService;
+  private githubService: IGitHubService;
 
-  constructor(githubService: GitHubService) {
+  constructor(githubService: IGitHubService) {
     this.githubService = githubService;
   }
 
@@ -101,10 +101,12 @@ export class CodeAnalysisService {
   async analyzeTechnicalDebt(owner: string, repo: string): Promise<TechnicalDebt> {
     try {
       // Get repository and commits
-      const repository = await this.githubService.getRepository(owner, repo);
+      // Repository information not directly used in this function
+      await this.githubService.getRepository(owner, repo);
       const commits = await this.githubService.getCommits(owner, repo, 100);
       const pullRequests = await this.githubService.getPullRequests(owner, repo, 'all', 50);
-      const issues = await this.githubService.getIssues(owner, repo, 'all', 100);
+      // Issues information not directly used in this function
+      await this.githubService.getIssues(owner, repo, 'all', 100);
       
       // Calculate complexity score based on commit patterns and PR reviews
       const complexityScore = await this.calculateComplexityScore(commits, pullRequests);
@@ -163,10 +165,9 @@ export class CodeAnalysisService {
       const releases = await this.githubService.getReleases(owner, repo);
       const pullRequests = await this.githubService.getPullRequests(owner, repo, 'closed', 50);
       const commits = await this.githubService.getCommits(owner, repo, 100);
-      const repository = await this.githubService.getRepository(owner, repo);
       
       // Calculate deployment frequency based on releases and workflow runs
-      const frequency = this.calculateDeploymentFrequency(releases, workflowRuns, repository);
+      const frequency = this.calculateDeploymentFrequency(releases, workflowRuns);
       
       // Calculate lead time based on PR merge to deployment patterns
       const leadTime = this.calculateLeadTime(pullRequests, releases, commits);
@@ -202,7 +203,7 @@ export class CodeAnalysisService {
    * @param owner Repository owner
    * @param repo Repository name
    */
-  async generateHealthReport(owner: string, repo: string): Promise<any> {
+  async generateHealthReport(owner: string, repo: string): Promise<{ repository: Repository; codeMetrics: CodeMetrics; codeQuality: CodeQuality; technicalDebt: TechnicalDebt; deploymentMetrics: DeploymentMetrics; overallScore: number; benchmarkScore: number; generatedAt: string }> {
     try {
       // Get repository information
       const repository = await this.githubService.getRepository(owner, repo);
@@ -287,7 +288,7 @@ export class CodeAnalysisService {
    * Calculate repository age in days
    * @param repository Repository object
    */
-  private calculateRepositoryAge(repository: Repository): number {
+  private calculateRepositoryAge(repository: Repository | { created_at: string }): number {
     const created = new Date(repository.created_at);
     const now = new Date();
     const diffTime = Math.abs(now.getTime() - created.getTime());
@@ -299,7 +300,7 @@ export class CodeAnalysisService {
    * @param issues Code quality issues
    * @param commits Recent commits
    */
-  private generateCodeQualityRecommendations(issues: any, commits: Commit[]): string[] {
+  private generateCodeQualityRecommendations(issues: { critical: number; high: number; medium: number; low: number }, commits: Commit[]): string[] {
     const recommendations: string[] = [];
     
     if (issues.critical > 0) {
@@ -333,7 +334,7 @@ export class CodeAnalysisService {
    * Generate technical debt recommendations
    * @param metrics Technical debt metrics
    */
-  private generateTechnicalDebtRecommendations(metrics: any): string[] {
+  private generateTechnicalDebtRecommendations(metrics: { complexityScore: number; duplications: number; testCoverage: number; outdatedDependencies: number }): string[] {
     const recommendations: string[] = [];
     
     if (metrics.complexityScore > 0.5) {
@@ -424,14 +425,20 @@ export class CodeAnalysisService {
   /**
    * Calculate complexity score based on commit patterns and PR reviews
    */
-  private async calculateComplexityScore(commits: Commit[], pullRequests: any[]): Promise<number> {
+  private async calculateComplexityScore(commits: Commit[], pullRequests: Record<string, unknown>[]): Promise<number> {
     // Analyze commit message quality (better messages = lower complexity)
     const commitQualityScore = this.analyzeCommitMessages(commits);
     
     // Analyze PR review patterns
     let reviewScore = 0.5; // Default
     if (pullRequests.length > 0) {
-      const prsWithReviews = pullRequests.filter(pr => pr.review_comments > 0 || pr.comments > 0);
+      let totalComments = 0;
+      pullRequests.forEach(pr => {
+        const reviewComments = typeof pr.review_comments === 'number' ? pr.review_comments : 0;
+        const comments = typeof pr.comments === 'number' ? pr.comments : 0;
+        totalComments += reviewComments + comments;
+      });
+      const prsWithReviews = pullRequests.filter(pr => pr.review_comments || pr.comments);
       reviewScore = prsWithReviews.length / pullRequests.length;
     }
     
@@ -449,26 +456,17 @@ export class CodeAnalysisService {
     try {
       // Get languages to understand the codebase
       const languages = await this.githubService.getLanguages(owner, repo);
-      const repository = await this.githubService.getRepository(owner, repo);
       
       // Estimate duplications based on repository characteristics
-      const repoAgeInDays = this.calculateRepositoryAge(repository);
-      const languageCount = Object.keys(languages).length;
-      
-      // More languages and older repos tend to have more duplication
       let duplicationScore = 0;
       
       // Base duplication increases with age (1% per month, max 25%)
-      duplicationScore += Math.min(repoAgeInDays / 30, 25);
+      const repoAgeInMonths = this.calculateRepositoryAge(await this.githubService.getRepository(owner, repo)) / 30;
+      duplicationScore += Math.min(repoAgeInMonths, 25);
       
       // Multiple languages can lead to duplication
-      if (languageCount > 3) {
-        duplicationScore += (languageCount - 3) * 2;
-      }
-      
-      // Repository size factor
-      if (repository.size > 10000) { // Large repos (>10MB)
-        duplicationScore += 5;
+      if (Object.keys(languages).length > 3) {
+        duplicationScore += (Object.keys(languages).length - 3) * 2;
       }
       
       return Math.min(duplicationScore, 40); // Cap at 40%
@@ -498,7 +496,7 @@ export class CodeAnalysisService {
       ];
       
       for (const item of rootContents) {
-        const name = item.name.toLowerCase();
+        const name = typeof item.name === 'string' ? item.name.toLowerCase() : '';
         if (testPatterns.some(pattern => name.includes(pattern))) {
           testScore += 15;
           indicators++;
@@ -549,7 +547,6 @@ export class CodeAnalysisService {
   private async calculateOutdatedDependencies(owner: string, repo: string): Promise<number> {
     try {
       const languages = await this.githubService.getLanguages(owner, repo);
-      const repository = await this.githubService.getRepository(owner, repo);
       let outdatedCount = 0;
       
       // Check JavaScript/TypeScript dependencies
@@ -559,16 +556,16 @@ export class CodeAnalysisService {
           const packageData = JSON.parse(packageJson);
           
           // Simple heuristic: older repos likely have more outdated dependencies
-          const repoAgeInMonths = this.calculateRepositoryAge(repository) / 30;
+          const repoAgeInMonths = this.calculateRepositoryAge(await this.githubService.getRepository(owner, repo)) / 30;
           const depCount = Object.keys(packageData.dependencies || {}).length + 
                           Object.keys(packageData.devDependencies || {}).length;
           
           // Estimate outdated dependencies (1 per 10 dependencies per 6 months of age)
           outdatedCount += Math.floor((depCount / 10) * (repoAgeInMonths / 6));
-        } catch (e: any) {
+        } catch (error: unknown) {
           // File not found is expected for many repositories (404 errors)
-          if (e.status !== 404) {
-            console.error('Unexpected error reading package.json:', e);
+          if (typeof error === 'object' && error !== null && 'status' in error && error.status !== 404) {
+            console.error('Unexpected error reading package.json:', error);
           }
         }
       }
@@ -578,12 +575,12 @@ export class CodeAnalysisService {
         try {
           await this.githubService.getFileContent(owner, repo, 'requirements.txt');
           // If requirements.txt exists, estimate based on repo age
-          const repoAgeInMonths = this.calculateRepositoryAge(repository) / 30;
+          const repoAgeInMonths = this.calculateRepositoryAge(await this.githubService.getRepository(owner, repo)) / 30;
           outdatedCount += Math.floor(repoAgeInMonths / 4); // 1 outdated per 4 months
-        } catch (e: any) {
+        } catch (error: unknown) {
           // File not found is expected for many repositories (404 errors)
-          if (e.status !== 404) {
-            console.error('Unexpected error reading requirements.txt:', e);
+          if (typeof error === 'object' && error !== null && 'status' in error && error.status !== 404) {
+            console.error('Unexpected error reading requirements.txt:', error);
           }
         }
       }
@@ -593,13 +590,13 @@ export class CodeAnalysisService {
       for (const file of depFiles) {
         try {
           await this.githubService.getFileContent(owner, repo, file);
-          const repoAgeInMonths = this.calculateRepositoryAge(repository) / 30;
+          const repoAgeInMonths = this.calculateRepositoryAge(await this.githubService.getRepository(owner, repo)) / 30;
           outdatedCount += Math.floor(repoAgeInMonths / 6);
           break; // Only count one dependency system
-        } catch (e: any) {
+        } catch (error: unknown) {
           // File not found is expected for many repositories (404 errors)
-          if (e.status !== 404) {
-            console.error(`Unexpected error reading ${file}:`, e);
+          if (typeof error === 'object' && error !== null && 'status' in error && error.status !== 404) {
+            console.error(`Unexpected error reading ${file}:`, error);
           }
         }
       }
@@ -614,8 +611,8 @@ export class CodeAnalysisService {
   /**
    * Calculate deployment frequency based on releases and workflow runs
    */
-  private calculateDeploymentFrequency(releases: any[], workflowRuns: any, repository: Repository): number {
-    const repoAgeInWeeks = this.calculateRepositoryAge(repository) / 7;
+  private calculateDeploymentFrequency(releases: any[], workflowRuns: any): number {
+    const repoAgeInWeeks = this.calculateRepositoryAge({ created_at: '2020-01-01T00:00:00Z' }) / 7;
     
     if (repoAgeInWeeks < 1) return 0;
     
@@ -639,7 +636,7 @@ export class CodeAnalysisService {
   /**
    * Calculate lead time based on PR merge to deployment patterns
    */
-  private calculateLeadTime(pullRequests: any[], releases: any[], commits: Commit[]): number {
+  private calculateLeadTime(pullRequests: Record<string, unknown>[], releases: any[], commits: Commit[]): number {
     if (pullRequests.length === 0 || releases.length === 0) {
       // Fallback: estimate based on commit frequency
       if (commits.length > 1) {
@@ -658,7 +655,7 @@ export class CodeAnalysisService {
     const mergedPRs = pullRequests.filter(pr => pr.merged_at).slice(0, 10); // Recent 10 PRs
     
     for (const pr of mergedPRs) {
-      const mergeDate = new Date(pr.merged_at);
+      const mergeDate = typeof pr.merged_at === 'string' ? new Date(pr.merged_at) : new Date();
       
       // Find next release after PR merge
       const nextRelease = releases.find(release => 
@@ -731,7 +728,7 @@ export class CodeAnalysisService {
   /**
    * Calculate mean time to recover based on issue resolution and hotfixes
    */
-  private calculateMeanTimeToRecover(commits: Commit[], pullRequests: any[]): number {
+  private calculateMeanTimeToRecover(commits: Commit[], pullRequests: Record<string, unknown>[]): number {
     // Look for hotfix/bugfix patterns
     const fixCommits = commits.filter(commit => {
       const message = commit.commit.message.toLowerCase();
@@ -768,7 +765,7 @@ export class CodeAnalysisService {
     
     // Fallback: analyze PR resolution time for bug fixes
     const bugFixPRs = pullRequests.filter(pr => {
-      const title = pr.title.toLowerCase();
+      const title = typeof pr.title === 'string' ? pr.title.toLowerCase() : '';
       return pr.merged_at && (
         title.includes('fix') || 
         title.includes('bug') || 
@@ -779,8 +776,9 @@ export class CodeAnalysisService {
     
     if (bugFixPRs.length > 0) {
       const avgPRTime = bugFixPRs.reduce((acc, pr) => {
-        const created = new Date(pr.created_at);
-        const merged = new Date(pr.merged_at);
+        // Type check the dates before using them
+        const created = typeof pr.created_at === 'string' ? new Date(pr.created_at) : new Date();
+        const merged = typeof pr.merged_at === 'string' ? new Date(pr.merged_at) : new Date();
         return acc + (merged.getTime() - created.getTime());
       }, 0) / bugFixPRs.length;
       

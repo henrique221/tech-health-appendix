@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import RepositoryForm from './components/RepositoryForm';
 import ReportView from './components/ReportView';
-import { GitHubService } from './services/github-service';
+import { GitHubService, GitHubRateLimitError } from './services/github-service';
 import { CodeAnalysisService } from './services/code-analysis-service';
 import { HealthReport } from './types';
 
@@ -28,11 +28,40 @@ export default function Home() {
       setReport(healthReport);
     } catch (err) {
       console.error('Error generating report:', err);
-      setError(
-        err instanceof Error 
-          ? err.message 
-          : 'An unexpected error occurred. Please try again.'
-      );
+      
+      // Check specifically for GitHub rate limit errors
+      if (err instanceof GitHubRateLimitError) {
+        // Format the reset time in a user-friendly way
+        const resetTime = err.resetTime;
+        const now = new Date();
+        
+        // Calculate time until reset
+        const timeUntilReset = Math.ceil((resetTime.getTime() - now.getTime()) / 60000); // in minutes
+        
+        const formattedTime = resetTime.toLocaleTimeString([], {
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+        
+        const formattedDate = resetTime.toLocaleDateString([], {
+          month: 'short',
+          day: 'numeric'
+        });
+        
+        // Create a user-friendly error message
+        setError(
+          `GitHub API rate limit exceeded. You've reached the limit of ${err.limit} requests. ` +
+          `Rate limit will reset in ${timeUntilReset} minute${timeUntilReset !== 1 ? 's' : ''} ` +
+          `(at ${formattedTime} on ${formattedDate}). ` +
+          `To continue without waiting, provide a GitHub token which has a higher rate limit.`
+        );
+      } else {
+        setError(
+          err instanceof Error 
+            ? err.message 
+            : 'An unexpected error occurred. Please try again.'
+        );
+      }
     } finally {
       setIsLoading(false);
     }
@@ -58,22 +87,50 @@ export default function Home() {
       
       <main className="main-container">
         {error && (
-          <div className="alert alert-error">
+          <div className={`alert ${error.includes('rate limit exceeded') ? 'alert-warning' : 'alert-error'}`}>
             <div className="flex items-start">
               <div className="flex-shrink-0">
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                </svg>
+                {error.includes('rate limit exceeded') ? (
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                ) : (
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                  </svg>
+                )}
               </div>
               <div className="ml-3">
-                <h3 className="font-semibold">Error</h3>
+                <h3 className="font-semibold">{error.includes('rate limit exceeded') ? 'GitHub API Rate Limit Exceeded' : 'Error'}</h3>
                 <p className="mt-1">{error}</p>
-                <button 
-                  onClick={handleReset}
-                  className="mt-2 btn btn-sm btn-secondary"
-                >
-                  Try again
-                </button>
+                {error.includes('rate limit exceeded') && (
+                  <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-md">
+                    <h4 className="font-medium text-amber-800">Sugestões:</h4>
+                    <ul className="list-disc ml-5 mt-1 text-sm space-y-1 text-amber-700">
+                      <li>Forneça um token de acesso pessoal do GitHub para aumentar o limite de requisições</li>
+                      <li>Aguarde até que o limite seja redefinido no horário indicado acima</li>
+                      <li>Use um token com escopo para o repositório específico que você está analisando</li>
+                    </ul>
+                  </div>
+                )}
+                <div className="mt-3 flex space-x-3">
+                  <button 
+                    onClick={handleReset}
+                    className="btn btn-sm btn-secondary"
+                  >
+                    Tentar novamente
+                  </button>
+                  {error.includes('rate limit exceeded') && (
+                    <a 
+                      href="https://github.com/settings/tokens?type=beta" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="btn btn-sm btn-primary"
+                    >
+                      Criar token do GitHub
+                    </a>
+                  )}
+                </div>
               </div>
             </div>
           </div>
