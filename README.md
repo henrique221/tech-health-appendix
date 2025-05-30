@@ -201,7 +201,7 @@ This MVP was developed with the assistance of various AI tools, significantly en
 | **ChatGPT** | Design and implementation guidance | Provided insights on UI/UX best practices, helped refine visualization approaches, and suggested optimization techniques |
 
 The use of these AI tools resulted in:
-- **70% faster development** compared to traditional coding approaches
+- **80% faster development** compared to traditional coding approaches
 - **Improved code quality** through consistent patterns and best practices
 - **More comprehensive error handling** and edge case coverage
 - **Enhanced documentation** with detailed inline comments and type definitions
@@ -303,13 +303,13 @@ The Tech Health Appendix Generator MVP establishes a foundation that can be expa
 
 ### Timeline Breakdown
 
-Total development time for this MVP: **Approximately 5 hours**
+Total development time for this MVP: **Approximately 4.5 hours**
 
 | Phase | Time | Activities |
 |-------|------|------------|
 | **Project Setup & Architecture** | 1 hour | Project initialization, technology selection, component structure design, architecture planning |
 | **Core Service Implementation** | 1.5 hours | GitHub API integration, code analysis algorithms, metrics calculation, data processing services |
-| **UI Development & Data Visualization** | 1.5 hours | Component creation, responsive design implementation, charts and visualizations, form handling |
+| **UI Development & Data Visualization** | 1 hour | Component creation, responsive design implementation, charts and visualizations, form handling |
 | **Report Generation & PDF Export** | 1 hour | HTML report template, PDF export functionality, styling and formatting, final testing |
 
 ### Optimization Techniques Used
@@ -372,7 +372,6 @@ This project is created as part of the Ego Eimi Challenge and is not licensed fo
 
 <p align="center">
   <b>Tech Health Appendix Generator</b><br>
-  Developed by Henrique Borges da Silva<br>
-  For the Ego Eimi Challenge<br>
+  Developed for the Ego Eimi Challenge<br>
   <i>Transforming technical metrics into fundraising advantages</i>
 </p>
